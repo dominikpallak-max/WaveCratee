@@ -8,6 +8,8 @@ import java.util.List;
 
 public class Crate {
 
+    public static final int MAX_LORE = 7;
+
     public final String id;
     public String name;
     public List<String> lore = new ArrayList<>();
@@ -20,7 +22,7 @@ public class Crate {
 
     public Crate(String id, Material material) {
         this.id = id;
-        this.name = "&b" + id;
+        this.name = "&b" + Msg.t(id);
         this.material = material;
     }
 
@@ -30,7 +32,10 @@ public class Crate {
             return out;
         }
         for (String line : raw.split("\\|")) {
-            out.add(line.trim());
+            if (out.size() >= MAX_LORE) {
+                break;
+            }
+            out.add(Msg.t(line.trim()));
         }
         return out;
     }
