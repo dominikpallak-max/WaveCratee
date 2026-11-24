@@ -21,6 +21,19 @@ public final class M {
         return new Vector(x, y, z);
     }
 
+    public static double cl(double x) {
+        return Math.max(0, Math.min(1, x));
+    }
+
+    public static double ease(double p) {
+        double q = 1 - cl(p);
+        return 1 - q * q * q;
+    }
+
+    public static double lerp(double a, double b, double t) {
+        return a + (b - a) * t;
+    }
+
     public static Vector sph(int i, int n) {
         double y = 1 - 2 * (i + 0.5) / n;
         double r = Math.sqrt(Math.max(0, 1 - y * y));
