@@ -30,7 +30,7 @@ import java.util.Set;
 
 public final class AnimationPlayer {
 
-    private static final int FINALE = 32;
+    private static final int FINALE = 34;
     private static final Random RNG = new Random();
     private static final Set<Run> RUNS = new HashSet<>();
 
@@ -169,6 +169,13 @@ public final class AnimationPlayer {
                     world.spawnParticle(anim.particle, loc, 1, 0.1, 0.1, 0.1, 0);
                 }
             }
+
+            for (int k = 0; k < 4; k++) {
+                double a = t * 0.2 + k * M.TAU / 4;
+                world.spawnParticle(anim.particle, center.clone().add(Math.cos(a) * 1.3, 0.1, Math.sin(a) * 1.3), 1, 0, 0, 0, 0);
+            }
+            world.spawnParticle(Particle.END_ROD, center.clone().add(0, RNG.nextDouble() * 3.0, 0), 1, 0.05, 0, 0.05, 0.02);
+
             if (t % 4 == 0) {
                 world.playSound(center, Sound.BLOCK_NOTE_BLOCK_CHIME, 1f, (float) (0.6 + 1.3 * p));
             }
@@ -181,6 +188,9 @@ public final class AnimationPlayer {
             items.clear();
             shown = spawn(world, center.clone().add(0, 1.3, 0), reward, crate.glowing, 1.2f);
             world.playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.6f);
+            if (anim.thunder()) {
+                world.strikeLightningEffect(center);
+            }
         }
 
         private void rise() {
@@ -192,6 +202,7 @@ public final class AnimationPlayer {
             shown.teleport(loc);
             spin(shown, (float) (1.2 + q * 1.0), t * (0.3f + (float) q));
             world.spawnParticle(Particle.END_ROD, loc, 2, 0.2, 0.2, 0.2, 0.01);
+            world.spawnParticle(anim.particle, loc, 2, 0.3, 0.3, 0.3, 0.02);
             if (t % 3 == 0) {
                 world.playSound(loc, Sound.BLOCK_NOTE_BLOCK_BELL, 1f, (float) (1.0 + q));
             }
@@ -221,9 +232,17 @@ public final class AnimationPlayer {
             Location end = center.clone().add(0, 2.5, 0);
             world.spawnParticle(Particle.FIREWORK, end, 80, 0.4, 0.4, 0.4, 0.25);
             world.spawnParticle(Particle.TOTEM_OF_UNDYING, end, 50, 0.5, 0.5, 0.5, 0.4);
+            world.spawnParticle(anim.particle, end, 60, 0.6, 0.6, 0.6, 0.2);
             world.spawnParticle(Particle.EXPLOSION, end, 1);
+            for (int k = 0; k < 40; k++) {
+                double a = k * M.TAU / 40;
+                world.spawnParticle(Particle.END_ROD, end, 0, Math.cos(a), 0.05, Math.sin(a), 0.5);
+            }
             world.playSound(end, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.5f, 1f);
             world.playSound(end, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.2f);
+            if (anim.thunder()) {
+                world.strikeLightningEffect(center);
+            }
 
             if (player.isOnline()) {
                 for (ItemStack left : player.getInventory().addItem(reward.clone()).values()) {
