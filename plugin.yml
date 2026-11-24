@@ -1,0 +1,15 @@
+name: WaveCrates
+version: 1.0.0
+main: pl.wavecode.crates.WaveCrates
+api-version: '1.21'
+author: WaveCode
+description: Skrzynki z animacjami otwierania
+commands:
+  wskrzynka:
+    description: Zarządzanie skrzynkami
+    usage: /wskrzynka pomoc
+    aliases: [wskrzynki, wcrate]
+permissions:
+  wavecrates.admin:
+    description: Dostęp do wszystkich komend skrzynek
+    default: op
