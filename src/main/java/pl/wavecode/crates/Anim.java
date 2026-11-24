@@ -6,6 +6,9 @@ import org.bukkit.util.Vector;
 
 import static pl.wavecode.crates.M.TAU;
 import static pl.wavecode.crates.M.c;
+import static pl.wavecode.crates.M.cl;
+import static pl.wavecode.crates.M.ease;
+import static pl.wavecode.crates.M.lerp;
 import static pl.wavecode.crates.M.s;
 import static pl.wavecode.crates.M.sph;
 import static pl.wavecode.crates.M.v;
@@ -207,6 +210,271 @@ public enum Anim {
                 Vector d = sph(i, n);
                 double r = p < 0.5 ? 1.8 * (1 - 2 * p) + 0.1 : 0.1 + 3.2 * (2 * p - 1);
                 return v(d.getX() * r, 1.4 + d.getY() * r, d.getZ() * r);
+            }),
+
+    KROPLA("Kropla", Material.PRISMARINE_CRYSTALS, "Przedmioty spadają kroplami do środka", 70, 12, Particle.DRIPPING_WATER, false,
+            (f, i, n, p) -> {
+                double q = ease(cl(p * 1.5 - f * 0.5));
+                double a = f * TAU;
+                return v(c(a) * 0.9 * (1 - q), 3.8 - 2.5 * q, s(a) * 0.9 * (1 - q));
+            }),
+
+    LOTOS("Lotos", Material.PINK_PETALS, "Rozkwitający kwiat lotosu", 75, 12, Particle.CHERRY_LEAVES, false,
+            (f, i, n, p) -> {
+                int layer = i % 3;
+                double open = ease(p * 1.6);
+                double a = (i / 3) * TAU / 4 + layer * 0.5 + p * TAU * 0.5;
+                double r = (0.4 + layer * 0.5) * open;
+                return v(c(a) * r, 0.9 + layer * 0.3 + 0.3 * s(p * TAU * 2), s(a) * r);
+            }),
+
+    DNA("DNA", Material.VINE, "Potrójna nić pnąca się w górę", 75, 15, Particle.ENCHANT, false,
+            (f, i, n, p) -> {
+                double a = p * TAU * 2 + (i % 3) * TAU / 3 + f * 4;
+                double r = 0.8 + 0.2 * s(f * 10);
+                return v(c(a) * r, 0.2 + f * 2.6, s(a) * r);
+            }),
+
+    ZEGAR("Zegar", Material.COMPASS, "Wskazówki zegara odliczają do otwarcia", 70, 10, Particle.END_ROD, false,
+            (f, i, n, p) -> {
+                double ang = i % 2 == 0 ? p * TAU * 4 : p * TAU * 0.5;
+                double r = 0.3 + (i / 2) * 0.35;
+                double b = p * Math.PI * 0.5;
+                double x = c(ang) * r;
+                return v(x * c(b), 1.6 + s(ang) * r, x * s(b));
+            }),
+
+    MOTYL("Motyl", Material.FEATHER, "Machające skrzydła motyla", 80, 24, Particle.WITCH, false,
+            (f, i, n, p) -> {
+                double t = f * 12 * Math.PI;
+                double k = Math.exp(c(t)) - 2 * c(4 * t) - Math.pow(s(t / 12), 5);
+                double flap = 0.6 + 0.4 * s(p * TAU * 6);
+                double x = s(t) * k * 0.35 * flap;
+                double y = c(t) * k * 0.35;
+                double a = p * TAU;
+                return v(x * c(a), 1.5 + y, x * s(a));
+            }),
+
+    WAZ("Wąż", Material.SLIME_BALL, "Wąż z przedmiotów pełza w powietrzu", 80, 10, Particle.SPORE_BLOSSOM_AIR, false,
+            (f, i, n, p) -> {
+                double u = p * TAU * 1.5 - f * 0.9;
+                return v(1.5 * s(3 * u), 1.4 + 0.7 * s(2 * u), 1.5 * s(2 * u + 1));
+            }),
+
+    KOLO_FORTUNY("Koło fortuny", Material.GOLD_INGOT, "Pionowe koło, które zwalnia przed losowaniem", 80, 10, Particle.CRIT, false,
+            (f, i, n, p) -> {
+                double a = f * TAU + ease(p) * TAU * 3;
+                double x = c(a) * 1.3;
+                return v(x * c(0.5), 1.6 + s(a) * 1.3, x * s(0.5));
+            }),
+
+    RULETKA("Ruletka", Material.REDSTONE, "Dwa koła ruletki kręcą się w przeciwne strony", 80, 12, Particle.ELECTRIC_SPARK, true,
+            (f, i, n, p) -> {
+                int ring = i % 2;
+                double dir = ring == 0 ? 1 : -1;
+                double a = (i / 2) * TAU / (n / 2.0) + dir * ease(p) * TAU * 4;
+                double r = 1.0 + ring * 0.7;
+                return v(c(a) * r, 1.2, s(a) * r);
+            }),
+
+    SKRZYDLA("Skrzydła", Material.ELYTRA, "Machające skrzydła z przedmiotów", 75, 14, Particle.END_ROD, false,
+            (f, i, n, p) -> {
+                double side = i % 2 == 0 ? 1 : -1;
+                double t = ((i / 2) + 1) / (n / 2.0);
+                double flap = s(p * TAU * 3) * 0.5;
+                double x = side * (0.3 + t * 1.8);
+                double y = 1.2 + t * 0.9 * (0.5 + flap) - t * t * 0.3;
+                double z = -0.3 * t;
+                double a = p * TAU;
+                return v(x * c(a) - z * s(a), y, x * s(a) + z * c(a));
+            }),
+
+    KORONA("Korona", Material.GOLDEN_HELMET, "Korona wynurza się i wiruje", 70, 12, Particle.TOTEM_OF_UNDYING, false,
+            (f, i, n, p) -> {
+                double a = f * TAU + p * TAU;
+                double up = 1 - ease(p * 1.5);
+                return v(c(a) * 1.1, 1.8 + (i % 2) * 0.5 + 0.1 * s(p * TAU * 4) - up * 1.5, s(a) * 1.1);
+            }),
+
+    PROMIENIE("Promienie", Material.END_ROD, "Pulsujące promienie światła", 70, 18, Particle.FIREWORK, false,
+            (f, i, n, p) -> {
+                int ray = i / 3;
+                int k = i % 3;
+                double a = ray * TAU / 6 + p * TAU;
+                double r = (k + 1) * 0.6 * (0.7 + 0.3 * s(p * TAU * 4));
+                return v(c(a) * r, 1.3, s(a) * r);
+            }),
+
+    DYSKOTEKA("Dyskoteka", Material.NOTE_BLOCK, "Skaczące przedmioty na parkiecie", 70, 9, Particle.HAPPY_VILLAGER, false,
+            (f, i, n, p) -> {
+                double gx = (i % 3 - 1) * 0.9;
+                double gz = ((i / 3) % 3 - 1) * 0.9;
+                double a = p * TAU;
+                return v(gx * c(a) - gz * s(a), 1.0 + 0.7 * Math.abs(s(p * TAU * 3 + i)), gx * s(a) + gz * c(a));
+            }),
+
+    RAKIETA("Rakieta", Material.FIREWORK_STAR, "Kolumna przedmiotów startuje jak rakieta", 60, 6, Particle.FLAME, false,
+            (f, i, n, p) -> v(0.1 * s(p * 40 + i), 0.2 + p * p * 3.2 + i * 0.25, 0.1 * c(p * 40 + i))),
+
+    SNIEZYCA("Śnieżyca", Material.SNOWBALL, "Wirująca śnieżyca z przedmiotami", 75, 14, Particle.SNOWFLAKE, false,
+            (f, i, n, p) -> {
+                double ph = (p * 1.2 + f) % 1;
+                double a = f * TAU * 2 + p * TAU * 2;
+                double r = 1.6 * (1 - ph * 0.5);
+                return v(c(a) * r, 3.5 - ph * 3.0, s(a) * r);
+            }),
+
+    ZLOTY_PYL("Złoty pył", Material.GLOWSTONE_DUST, "Przedmioty latają jak magiczny pył", 75, 14, Particle.WAX_ON, false,
+            (f, i, n, p) -> {
+                double a = f * TAU + p * 8 + s(p * 17 + i);
+                double r = 0.7 + 0.6 * s(p * 9 + i * 2);
+                return v(c(a) * r, 1.3 + 0.7 * s(p * 7 + i * 3), s(a) * r);
+            }),
+
+    TROJKAT("Trójkąt", Material.QUARTZ, "Przedmioty biegną po bokach trójkąta", 70, 12, Particle.SOUL_FIRE_FLAME, false,
+            (f, i, n, p) -> {
+                double u = ((f + p * 2) % 1) * 3;
+                int seg = (int) u;
+                double l = u - seg;
+                double a0 = seg * TAU / 3;
+                double a1 = (seg + 1) * TAU / 3;
+                return v(lerp(c(a0), c(a1), l) * 1.6, 1.3, lerp(s(a0), s(a1), l) * 1.6);
+            }),
+
+    PENTAGRAM("Pentagram", Material.REDSTONE_TORCH, "Przedmioty rysują pentagram", 80, 15, Particle.SOUL_FIRE_FLAME, false,
+            (f, i, n, p) -> {
+                double u = ((f + p) % 1) * 5;
+                int seg = (int) u;
+                double l = u - seg;
+                double a0 = seg * 2 * TAU / 5;
+                double a1 = (seg + 1) * 2 * TAU / 5;
+                return v(lerp(c(a0), c(a1), l) * 1.6, 1.3, lerp(s(a0), s(a1), l) * 1.6);
+            }),
+
+    GIROSKOP("Giroskop", Material.SPYGLASS, "Trzy obracające się pierścienie", 75, 12, Particle.ENCHANT, false,
+            (f, i, n, p) -> {
+                int ring = i % 3;
+                double a = (i / 3) * TAU / 4 + p * TAU * (1 + ring * 0.5);
+                double b = p * TAU;
+                double x0 = c(a) * 1.3;
+                double y0 = s(a) * 1.3;
+                if (ring == 0) {
+                    return v(x0 * c(b), 1.5 + y0, x0 * s(b));
+                }
+                if (ring == 1) {
+                    return v(x0, 1.5 + y0 * c(b), y0 * s(b));
+                }
+                return v(x0, 1.5 + 0.3 * s(b * 2), y0);
+            }),
+
+    WULKAN("Wulkan", Material.MAGMA_BLOCK, "Erupcja lawy z przedmiotami", 70, 14, Particle.LAVA, false,
+            (f, i, n, p) -> {
+                double ph = (p * 2.5 + f) % 1;
+                double a = i * 2.4;
+                double r = ph * 1.2 * (0.5 + (i % 3) * 0.4);
+                return v(c(a) * r, 0.2 + 4 * ph * (1 - ph) * 3.2, s(a) * r);
+            }),
+
+    TRZESIENIE("Trzęsienie", Material.ANVIL, "Ziemia drży, a przedmioty podskakują", 70, 10, Particle.POOF, false,
+            (f, i, n, p) -> {
+                double a = f * TAU;
+                double jump = p > 0.8 ? 3.0 * Math.sin((p - 0.8) / 0.2 * Math.PI * 0.5) : 0;
+                return v(c(a) * 1.1 + 0.15 * s(p * 90 + i * 2), 0.3 + jump + 0.1 * Math.abs(s(p * 60 + i)), s(a) * 1.1 + 0.15 * c(p * 85 + i));
+            }),
+
+    KONSTELACJA("Konstelacja", Material.ECHO_SHARD, "Gwiazdozbiór mrugający nad skrzynką", 80, 12, Particle.END_ROD, false,
+            (f, i, n, p) -> {
+                Vector d = sph(i, n);
+                double a = p * TAU * 0.7;
+                double r = 1.8 + 0.2 * s(p * TAU * 3 + i);
+                double x = d.getX() * r;
+                double z = d.getZ() * r;
+                return v(x * c(a) - z * s(a), 2.2 + d.getY() * r, x * s(a) + z * c(a));
+            }),
+
+    TELEPORT("Teleport", Material.CHORUS_FRUIT, "Przedmioty teleportują się w losowe miejsca", 70, 10, Particle.PORTAL, false,
+            (f, i, n, p) -> {
+                int idx = (int) (p * 8);
+                double a = Math.toRadians((i * 73 + idx * 131) % 360);
+                double r = 0.8 + ((i * 37 + idx * 17) % 10) * 0.1;
+                return v(c(a) * r, 0.6 + ((i * 53 + idx * 29) % 20) * 0.1, s(a) * r);
+            }),
+
+    WSTEGA("Wstęga", Material.STRING, "Wstęga Möbiusa z przedmiotów", 75, 16, Particle.GLOW, false,
+            (f, i, n, p) -> {
+                double t = f * TAU + p * TAU;
+                double half = t / 2;
+                double w = (i % 2 * 2 - 1) * 0.4;
+                double rr = 1.3 + w * c(half);
+                return v(rr * c(t), 1.4 + w * s(half), rr * s(t));
+            }),
+
+    ATOM("Atom", Material.NETHERITE_INGOT, "Elektrony krążą po trzech orbitach", 75, 9, Particle.ELECTRIC_SPARK, false,
+            (f, i, n, p) -> {
+                int k = i % 3;
+                double a = (i / 3) * TAU / 3 + p * TAU * 3;
+                double x0 = c(a) * 1.4;
+                double y0 = s(a) * 1.4;
+                double y1 = y0 * c(1.05);
+                double z1 = y0 * s(1.05);
+                double rot = k * TAU / 3;
+                return v(x0 * c(rot) + z1 * s(rot), 1.5 + y1, -x0 * s(rot) + z1 * c(rot));
+            }),
+
+    KWIAT("Kwiat", Material.RED_TULIP, "Przedmioty układają się w płatki kwiatu", 75, 24, Particle.CHERRY_LEAVES, false,
+            (f, i, n, p) -> {
+                double th = f * TAU;
+                double r = 1.5 * c(3 * th);
+                double a = th + p * TAU;
+                return v(c(a) * r, 1.3 + 0.2 * s(p * TAU * 3), s(a) * r);
+            }),
+
+    TECZA("Tęcza", Material.AMETHYST_CLUSTER, "Kolorowa tęcza z łuków przedmiotów", 75, 20, Particle.HAPPY_VILLAGER, false,
+            (f, i, n, p) -> {
+                int ring = i % 4;
+                int idx = i / 4;
+                double a = idx * Math.PI / 4;
+                double r = (1.0 + ring * 0.25) * ease(p * 1.5);
+                double b = p * Math.PI;
+                double x = c(a) * r;
+                return v(x * c(b), 0.3 + s(a) * r * 1.2, x * s(b));
+            }),
+
+    BRAMA("Brama", Material.CRYING_OBSIDIAN, "Dwie świetliste bramy otwierają się nad skrzynką", 75, 14, Particle.PORTAL, false,
+            (f, i, n, p) -> {
+                double a = Math.PI * f;
+                double r = 1.5 * cl(p * 1.5);
+                double b = p * Math.PI * 0.5 + (i % 2) * Math.PI / 2;
+                double x = c(a) * r;
+                return v(x * c(b), 0.2 + s(a) * r * 1.4, x * s(b));
+            }),
+
+    WIATRAK("Wiatrak", Material.WHEAT, "Wirujące łopaty wiatraka", 70, 12, Particle.CLOUD, false,
+            (f, i, n, p) -> {
+                int blade = i % 4;
+                int k = i / 4;
+                double ang = blade * TAU / 4 + p * TAU * 3;
+                double r = (k + 1) * 0.5;
+                double b = p * Math.PI;
+                double x = c(ang) * r;
+                return v(x * c(b), 1.5 + s(ang) * r, x * s(b));
+            }),
+    WIELKI_WYBUCH("Wielki wybuch", Material.END_CRYSTAL, "Gigantyczna eksplozja kosmicznej energii", 70, 20, Particle.FIREWORK, false,
+            (f, i, n, p) -> {
+                Vector d = sph(i, n);
+                double r = 3.5 * Math.pow(p, 0.4);
+                double a = p * TAU;
+                double x = d.getX() * r;
+                double z = d.getZ() * r;
+                return v(x * c(a) - z * s(a), 1.4 + d.getY() * r, x * s(a) + z * c(a));
+            }),
+
+    ROJ("Rój", Material.HONEYCOMB, "Rój przedmiotów krąży i wznosi się", 75, 14, Particle.WAX_ON, false,
+            (f, i, n, p) -> {
+                double a = p * TAU * 8 + i * 2;
+                double cx = c(f * TAU) * 1.2;
+                double cz = s(f * TAU) * 1.2;
+                return v(cx + c(a) * 0.25, 1.0 + p * 1.5 + 0.2 * s(a * 2), cz + s(a) * 0.25);
             });
 
     public final String display;
@@ -231,6 +499,11 @@ public enum Anim {
 
     public String id() {
         return name().toLowerCase();
+    }
+
+    public boolean thunder() {
+        return this == PIORUN || this == BURZA || this == SUPERNOWA || this == WIELKI_WYBUCH
+                || this == METEORYT || this == WULKAN || this == TRZESIENIE;
     }
 
     public static Anim find(String raw) {
