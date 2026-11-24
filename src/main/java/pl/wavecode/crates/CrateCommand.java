@@ -97,7 +97,7 @@ public final class CrateCommand implements CommandExecutor, TabCompleter {
             return;
         }
         Crate c = plugin.crates().create(id, hand.getType());
-        c.name = "&b" + a[1];
+        c.name = "&b" + Msg.t(a[1]);
         plugin.crates().save();
         Msg.send(p, "&aStworzono skrzynkę &2" + id + "&a! Edytuj ją: &f/wskrzynka edytuj " + id);
     }
@@ -203,7 +203,7 @@ public final class CrateCommand implements CommandExecutor, TabCompleter {
                     Msg.send(sender, "&cPodaj nową nazwę.");
                     return;
                 }
-                c.name = value;
+                c.name = Msg.t(value);
             }
             case "lore" -> c.lore = Crate.parseLore(value);
             case "blok" -> {
