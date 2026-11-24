@@ -15,6 +15,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -53,8 +54,8 @@ public final class Listeners implements Listener {
         }
         if (!c.enabled) {
             p.showTitle(Title.title(
-                    Msg.c("&c" + Msg.sc("wyłączona")),
-                    Msg.c("&7" + Msg.sc("ta skrzynka jest chwilowo") + " &f" + Msg.sc("wyłączona"))));
+                    Msg.c("&cWyłączona"),
+                    Msg.c("&7Ta skrzynka jest chwilowo &fwyłączona")));
             return;
         }
         if (c.drops.isEmpty()) {
@@ -96,16 +97,25 @@ public final class Listeners implements Listener {
 
         switch (holder.type) {
             case EDIT -> clickEdit(e, p, c, top);
-            case ANIMS -> clickAnims(e, p, c, top);
+            case LORE -> clickLore(e, p, c, top);
+            case ANIMS -> clickAnims(e, p, c, top, holder);
             case DROPS -> clickDrops(e, p, c, top);
         }
     }
 
-    private void clickEdit(InventoryClickEvent e, Player p, Crate c, boolean top) {
+    private boolean guard(InventoryClickEvent e, boolean top) {
         if (top || e.isShiftClick() || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
             e.setCancelled(true);
         }
-        if (!top) {
+        return top;
+    }
+
+    private void later(Runnable task) {
+        plugin.getServer().getScheduler().runTask(plugin, task);
+    }
+
+    private void clickEdit(InventoryClickEvent e, Player p, Crate c, boolean top) {
+        if (!guard(e, top)) {
             return;
         }
         switch (e.getRawSlot()) {
@@ -120,16 +130,19 @@ public final class Listeners implements Listener {
                     Msg.send(p, "&cWeź blok na kursor i kliknij ten przycisk.");
                 }
             }
-            case Gui.SLOT_NAME -> prompt(p, c, "nazwa", "&7Wpisz na czacie nową nazwę skrzynki. Możesz użyć kolorów &f&&7.");
-            case Gui.SLOT_LORE -> prompt(p, c, "lore", "&7Wpisz na czacie lore. Linie oddzielaj znakiem &f|&7, wpisz &fbrak&7 aby wyczyścić.");
+            case Gui.SLOT_NAME -> prompt(p, c, "nazwa", "&7Wpisz na czacie nową nazwę skrzynki. Kolory dodasz znakiem &f&&7 i kodem koloru.");
+            case Gui.SLOT_LORE -> {
+                p.closeInventory();
+                later(() -> Gui.openLore(p, c));
+            }
             case Gui.SLOT_MODEL -> prompt(p, c, "model", "&7Wpisz na czacie liczbę custom model data.");
             case Gui.SLOT_DROPS -> {
                 p.closeInventory();
-                plugin.getServer().getScheduler().runTask(plugin, () -> Gui.openDrops(p, c));
+                later(() -> Gui.openDrops(p, c));
             }
             case Gui.SLOT_ANIM -> {
                 p.closeInventory();
-                plugin.getServer().getScheduler().runTask(plugin, () -> Gui.openAnims(p, c));
+                later(() -> Gui.openAnims(p, c, 0));
             }
             case Gui.SLOT_GLOW -> {
                 c.glowing = !c.glowing;
@@ -154,25 +167,59 @@ public final class Listeners implements Listener {
         }
     }
 
-    private void clickAnims(InventoryClickEvent e, Player p, Crate c, boolean top) {
-        if (top || e.isShiftClick() || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
-            e.setCancelled(true);
-        }
-        if (!top) {
+    private void clickLore(InventoryClickEvent e, Player p, Crate c, boolean top) {
+        if (!guard(e, top)) {
             return;
         }
         int slot = e.getRawSlot();
         if (slot == Gui.SLOT_CLOSE) {
             p.closeInventory();
-            plugin.getServer().getScheduler().runTask(plugin, () -> Gui.openEdit(plugin, p, c));
+            later(() -> Gui.openEdit(plugin, p, c));
             return;
         }
-        int index = slot - Gui.ANIM_START;
+        if (slot == Gui.SLOT_ADD) {
+            if (c.lore.size() >= Crate.MAX_LORE) {
+                Msg.send(p, "&cMaksymalnie " + Crate.MAX_LORE + " linijek lore.");
+            } else {
+                prompt(p, c, "lore", "&7Wpisz na czacie nową linijkę lore.");
+            }
+            return;
+        }
+        int idx = slot - Gui.LORE_START;
+        if (slot >= Gui.LORE_START && slot < Gui.LORE_START + Crate.MAX_LORE && idx < c.lore.size()) {
+            c.lore.remove(idx);
+            plugin.crates().save();
+            Gui.fillLore(e.getInventory(), c);
+            Msg.send(p, "&aUsunięto linijkę lore.");
+        }
+    }
+
+    private void clickAnims(InventoryClickEvent e, Player p, Crate c, boolean top, Gui.Holder holder) {
+        if (!guard(e, top)) {
+            return;
+        }
+        int slot = e.getRawSlot();
+        if (slot == Gui.SLOT_CLOSE) {
+            p.closeInventory();
+            later(() -> Gui.openEdit(plugin, p, c));
+            return;
+        }
+        if (slot == Gui.SLOT_PREV && holder.page > 0) {
+            holder.page--;
+            Gui.fillAnims(e.getInventory(), c, holder.page);
+            return;
+        }
+        if (slot == Gui.SLOT_NEXT && holder.page < Gui.pages() - 1) {
+            holder.page++;
+            Gui.fillAnims(e.getInventory(), c, holder.page);
+            return;
+        }
+        int index = Gui.animIndex(slot, holder.page);
         Anim[] all = Anim.values();
         if (index >= 0 && index < all.length) {
             c.anim = all[index];
             plugin.crates().save();
-            Gui.fillAnims(e.getInventory(), c);
+            Gui.fillAnims(e.getInventory(), c, holder.page);
             Msg.send(p, "&aWybrano animację &f" + c.anim.display + "&a.");
         }
     }
@@ -182,12 +229,36 @@ public final class Listeners implements Listener {
             e.setCancelled(true);
             return;
         }
-        if (top && e.getRawSlot() >= Gui.DROP_SLOTS) {
-            e.setCancelled(true);
-            if (e.getRawSlot() == Gui.SLOT_CLOSE) {
+        int raw = e.getRawSlot();
+        if (top) {
+            if (raw == Gui.SLOT_DROP_BACK) {
+                e.setCancelled(true);
                 p.closeInventory();
-                plugin.getServer().getScheduler().runTask(plugin, () -> Gui.openEdit(plugin, p, c));
+                later(() -> Gui.openEdit(plugin, p, c));
+                return;
             }
+            if (!Gui.isDropSlot(raw)) {
+                e.setCancelled(true);
+            }
+            return;
+        }
+        if (e.isShiftClick()) {
+            e.setCancelled(true);
+            ItemStack stack = e.getCurrentItem();
+            if (stack == null || stack.getType().isAir()) {
+                return;
+            }
+            Inventory inv = e.getInventory();
+            for (int i = 0; i < Gui.DROP_MAX; i++) {
+                int slot = Gui.dropSlot(i);
+                ItemStack at = inv.getItem(slot);
+                if (at == null || at.getType().isAir()) {
+                    inv.setItem(slot, stack.clone());
+                    e.setCurrentItem(null);
+                    return;
+                }
+            }
+            Msg.send(p, "&cBrak miejsca w dropie.");
         }
     }
 
@@ -198,9 +269,12 @@ public final class Listeners implements Listener {
         }
         int size = e.getInventory().getSize();
         for (int slot : e.getRawSlots()) {
-            if (slot < size && (holder.type != Gui.Type.DROPS || slot >= Gui.DROP_SLOTS)) {
-                e.setCancelled(true);
-                return;
+            if (slot < size) {
+                boolean allowed = holder.type == Gui.Type.DROPS && Gui.isDropSlot(slot);
+                if (!allowed) {
+                    e.setCancelled(true);
+                    return;
+                }
             }
         }
     }
@@ -215,8 +289,8 @@ public final class Listeners implements Listener {
             return;
         }
         List<ItemStack> list = new ArrayList<>();
-        for (int i = 0; i < Gui.DROP_SLOTS; i++) {
-            ItemStack stack = e.getInventory().getItem(i);
+        for (int i = 0; i < Gui.DROP_MAX; i++) {
+            ItemStack stack = e.getInventory().getItem(Gui.dropSlot(i));
             if (stack != null && !stack.getType().isAir()) {
                 list.add(stack.clone());
             }
@@ -242,7 +316,7 @@ public final class Listeners implements Listener {
         e.setCancelled(true);
         String text = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
         Player p = e.getPlayer();
-        plugin.getServer().getScheduler().runTask(plugin, () -> apply(p, pd, text));
+        later(() -> apply(p, pd, text));
     }
 
     private void apply(Player p, Pending pd, String text) {
@@ -250,29 +324,39 @@ public final class Listeners implements Listener {
         if (c == null) {
             return;
         }
+        boolean lore = pd.field().equals("lore");
+
         if (text.equalsIgnoreCase("anuluj")) {
             Msg.send(p, "&7Anulowano.");
-            Gui.openEdit(plugin, p, c);
-            return;
-        }
-        switch (pd.field()) {
-            case "nazwa" -> c.name = text;
-            case "lore" -> c.lore = Crate.parseLore(text);
-            case "model" -> {
-                try {
-                    c.model = Math.max(0, Integer.parseInt(text));
-                } catch (NumberFormatException ex) {
-                    Msg.send(p, "&cTo nie jest liczba.");
-                    Gui.openEdit(plugin, p, c);
-                    return;
+        } else {
+            switch (pd.field()) {
+                case "nazwa" -> c.name = Msg.t(text);
+                case "lore" -> {
+                    if (c.lore.size() < Crate.MAX_LORE) {
+                        c.lore.add(Msg.t(text));
+                    }
+                }
+                case "model" -> {
+                    try {
+                        c.model = Math.max(0, Integer.parseInt(text));
+                    } catch (NumberFormatException ex) {
+                        Msg.send(p, "&cTo nie jest liczba.");
+                        Gui.openEdit(plugin, p, c);
+                        return;
+                    }
+                }
+                default -> {
                 }
             }
-            default -> {
-            }
+            plugin.crates().save();
+            Msg.send(p, "&aZapisano zmianę.");
         }
-        plugin.crates().save();
-        Msg.send(p, "&aZapisano zmianę.");
-        Gui.openEdit(plugin, p, c);
+
+        if (lore) {
+            Gui.openLore(p, c);
+        } else {
+            Gui.openEdit(plugin, p, c);
+        }
     }
 
     @EventHandler
